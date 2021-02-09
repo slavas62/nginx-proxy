@@ -241,6 +241,18 @@ upstream {{ $upstream_name }} {
 
 {{ $is_https := (and (ne $https_method "nohttps") (ne $cert "") (exists (printf "/etc/nginx/certs/%s.crt" $cert)) (exists (printf "/etc/nginx/certs/%s.key" $cert))) }}
 
+{{/* Get the best matching vhost.d include file */}}
+{{ $vhostFile := closest (dir "/etc/nginx/vhost.d") ($host) }}
+{{ $vhostFile := when (ne $vhostFile "") (print "/etc/nginx/vhost.d/" $vhostFile) "" }}
+
+{{/* Get the best matching vhost.d location include file */}}
+{{ $vhostLocationFile := closest (dir "/etc/nginx/vhost.d") (print $host "_location") }}
+{{ $vhostLocationFile := when (ne $vhostLocationFile "") (print "/etc/nginx/vhost.d/" $vhostLocationFile) "" }}
+
+{{/* Get the best matching htpasswd file */}}
+{{ $htpasswdFile := closest (dir "/etc/nginx/htpasswd") $host }}
+{{ $htpasswdFile := when (ne $htpasswdFile "") (print "/etc/nginx/htpasswd/" $htpasswdFile) "" }}
+
 {{ if $is_https }}
 
 {{ if eq $https_method "redirect" }}
@@ -303,8 +315,8 @@ server {
 	add_header Strict-Transport-Security "{{ trim $hsts }}" always;
 	{{ end }}
 
-	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
-	include {{ printf "/etc/nginx/vhost.d/%s" $host }};
+	{{ if (and (not (hasSuffix "_location" $vhostFile)) (exists $vhostFile)) }}
+	include {{ $vhostFile }};
 	{{ else if (exists "/etc/nginx/vhost.d/default") }}
 	include /etc/nginx/vhost.d/default;
 	{{ end }}
@@ -323,12 +335,12 @@ server {
 		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
 		{{ end }}
 
-		{{ if (exists (printf "/etc/nginx/htpasswd/%s" $host)) }}
+		{{ if exists $htpasswdFile }}
 		auth_basic	"Restricted {{ $host }}";
-		auth_basic_user_file	{{ (printf "/etc/nginx/htpasswd/%s" $host) }};
+		auth_basic_user_file	{{ $htpasswdFile }};
 		{{ end }}
-		{{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
-		include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
+		{{ if (and (hasSuffix "_location" $vhostLocationFile) (exists $vhostLocationFile)) }}
+		include {{ $vhostLocationFile }};
 		{{ else if (exists "/etc/nginx/vhost.d/default_location") }}
 		include /etc/nginx/vhost.d/default_location;
 		{{ end }}
@@ -352,8 +364,8 @@ server {
 	include /etc/nginx/network_internal.conf;
 	{{ end }}
 
-	{{ if (exists (printf "/etc/nginx/vhost.d/%s" $host)) }}
-	include {{ printf "/etc/nginx/vhost.d/%s" $host }};
+	{{ if (and (not (hasSuffix "_location" $vhostFile)) (exists $vhostFile)) }}
+	include {{ $vhostFile }};
 	{{ else if (exists "/etc/nginx/vhost.d/default") }}
 	include /etc/nginx/vhost.d/default;
 	{{ end }}
@@ -371,12 +383,13 @@ server {
 		{{ else }}
 		proxy_pass {{ trim $proto }}://{{ trim $upstream_name }};
 		{{ end }}
-		{{ if (exists (printf "/etc/nginx/htpasswd/%s" $host)) }}
+
+		{{ if exists $htpasswdFile }}
 		auth_basic	"Restricted {{ $host }}";
-		auth_basic_user_file	{{ (printf "/etc/nginx/htpasswd/%s" $host) }};
+		auth_basic_user_file	{{ $htpasswdFile }};
 		{{ end }}
-		{{ if (exists (printf "/etc/nginx/vhost.d/%s_location" $host)) }}
-		include {{ printf "/etc/nginx/vhost.d/%s_location" $host}};
+		{{ if (and (hasSuffix "_location" $vhostLocationFile) (exists $vhostLocationFile)) }}
+		include {{ $vhostLocationFile }};
 		{{ else if (exists "/etc/nginx/vhost.d/default_location") }}
 		include /etc/nginx/vhost.d/default_location;
 		{{ end }}
