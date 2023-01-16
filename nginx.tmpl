@@ -340,11 +340,20 @@ server {
 	}
 
 	location / {
-		{{ if eq $external_https_port "443" }}
-		return 301 https://$host$request_uri;
-		{{ else }}
-		return 301 https://$host:{{ $external_https_port }}$request_uri;
-		{{ end }}
+		if ($request_method = GET) {
+			{{ if eq $external_https_port "443" }}
+			return 301 https://$host$request_uri;
+			{{ else }}
+			return 301 https://$host:{{ $external_https_port }}$request_uri;
+			{{ end }}
+		}
+		if ($request_method != GET) {
+			{{ if eq $external_https_port "443" }}
+			return 308 https://$host$request_uri;
+			{{ else }}
+			return 308 https://$host:{{ $external_https_port }}$request_uri;
+			{{ end }}
+		}
 	}
 }
 {{ end }}

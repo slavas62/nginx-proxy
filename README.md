@@ -336,6 +336,7 @@ Note that the `Mozilla-Old` policy should use a 1024 bits DH key for compatibili
 The default behavior for the proxy when port 80 and 443 are exposed is as follows:
 
 * If a container has a usable cert, port 80 will redirect to 443 for that container so that HTTPS is always preferred when available.
+  * This redirect will use a 301 code for GET requests and 308 code for any other http method (POST/HEAD/PUT etc.). A 308 redirect is a more recent version of 301 permanent redirect that maintains the http method. Previously, 301 redirects would all be converted into GET requests.
 * If the container does not have a usable cert, a 503 will be returned.
 
 Note that in the latter case, a browser may get an connection error as no certificate is available to establish a connection. A self-signed or generic cert named `default.crt` and `default.key` will allow a client browser to make a SSL connection (likely w/ a warning) and subsequently receive a 500.
