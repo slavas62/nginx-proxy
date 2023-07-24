@@ -295,6 +295,12 @@ Finally, start your containers with `VIRTUAL_HOST` environment variables.
 docker run -e VIRTUAL_HOST=foo.bar.com  ...
 ```
 
+To allow for network segregation of the nginx and docker-gen containers, the label `com.github.nginx-proxy.nginx-proxy.nginx` must be applied to the nginx container, otherwise it is assumed that nginx and docker-gen share the same network:
+
+```console
+docker run -d -p 80:80 --name nginx -l "com.github.nginx-proxy.nginx-proxy.nginx" -v /tmp/nginx:/etc/nginx/conf.d -t nginx
+```
+
 ### SSL Support using an ACME CA
 
 [acme-companion](https://github.com/nginx-proxy/acme-companion) is a lightweight companion container for the nginx-proxy. It allows the automated creation/renewal of SSL certificates using the ACME protocol.
